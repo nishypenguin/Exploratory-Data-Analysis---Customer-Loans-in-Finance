@@ -18,6 +18,18 @@ This project focuses on analyzing loan payment data extracted from an AWS RDS da
 - [Future Improvements](#future-improvements)
 
 ---
+## Setup Instructions
+
+To set up and run the Loan Payment Analysis Project on your local machine, please follow these steps:
+
+1. **Clone the Repository**:
+git clone <repository-url> cd <repository-folder>
+2. **Create a Virtual Environment**:
+It's recommended to use a virtual environment to manage dependencies.
+python -m venv venv source venv/bin/activate # On Windows, use venv\\Scripts\\activate
+3. **Install Required Packages**:
+Install the Python dependencies listed in `requirements.txt`.
+pip install -r requirements.txt
 
 ## Project Structure
 
