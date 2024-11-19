@@ -175,6 +175,153 @@ class DataFrameInfo:
                 print(f"No suitable transformation applied to '{col}' (Original Skewness: {original_skew:.4f})")
 
         return best_transformations
+    
+    def identify_highly_correlated_columns(self, numeric_data, threshold=0.9):
+        """
+        Identifies columns with high correlation above a specified threshold in numeric columns.
+
+        Args:
+            numeric_data (pd.DataFrame): DataFrame containing only numeric columns.
+            threshold (float): Correlation coefficient threshold for identifying high correlations.
+
+        Returns:
+            list: List of column names to be removed due to high correlation.
+        """
+        # Compute the correlation matrix
+        correlation_matrix = numeric_data.corr()
+
+        # Identify pairs of columns with high correlation
+        high_corr_pairs = correlation_matrix.abs().unstack().sort_values(ascending=False)
+
+        # Filter out self-correlation
+        high_corr_pairs = high_corr_pairs[high_corr_pairs < 1]
+
+        # Find columns to remove
+        columns_to_remove = set()
+        for (col1, col2), corr_value in high_corr_pairs.items():
+            if corr_value > threshold:
+                if col1 not in columns_to_remove and col2 not in columns_to_remove:
+                    columns_to_remove.add(col2)  # Keep one column, remove the other
+
+        print(f"Columns to remove due to high correlation: {columns_to_remove}")
+        return list(columns_to_remove)
+    
+    def remove_highly_correlated_columns(self, threshold=0.9):
+        """
+        Removes highly correlated columns based on a specified threshold, processing only numeric columns.
+
+        Args:
+            threshold (float): Correlation coefficient threshold for identifying high correlations.
+
+        Returns:
+            pd.DataFrame: The updated DataFrame with highly correlated columns removed.
+        """
+        # Filter to only numerical columns
+        numeric_data = self.transformed_column_data.select_dtypes(include=[np.number])
+
+        # Identify highly correlated columns
+        columns_to_remove = self.identify_highly_correlated_columns(numeric_data, threshold=threshold)
+
+        # Remove the columns from the dataset
+        self.transformed_column_data.drop(columns=columns_to_remove, inplace=True)
+
+        print(f"Removed columns: {columns_to_remove}")
+        return self.transformed_column_data
+
+class Plotter:
+    """
+    A class for visualizing insights and patterns in a DataFrame.
+    """
+
+    def __init__(self, transformed_column_data):
+        """
+        Initializes the Plotter class with the transformed DataFrame.
+
+        Args:
+            transformed_column_data (pd.DataFrame): The DataFrame to visualize.
+        """
+        self.transformed_column_data = transformed_column_data
+
+    def plot_null_values(self, null_summary_before, null_summary_after):
+        """
+        Plots null value percentages before and after handling transformations.
+
+        Args:
+            null_summary_before (pd.DataFrame): DataFrame summarizing null values before transformations.
+            null_summary_after (pd.DataFrame): DataFrame summarizing null values after transformations.
+        """
+        fig, ax = plt.subplots(1, 2, figsize=(12, 6))
+
+        # Plot null values before transformations
+        sns.barplot(x=null_summary_before.index, y=null_summary_before['Null Percentage'], ax=ax[0])
+        ax[0].set_title("Null Values Before Transformation")
+        ax[0].set_xticklabels(ax[0].get_xticklabels(), rotation=90)
+        ax[0].set_ylabel("Null Percentage")
+
+        # Plot null values after transformations
+        sns.barplot(x=null_summary_after.index, y=null_summary_after['Null Percentage'], ax=ax[1])
+        ax[1].set_title("Null Values After Transformation")
+        ax[1].set_xticklabels(ax[1].get_xticklabels(), rotation=90)
+        ax[1].set_ylabel("Null Percentage")
+
+        plt.tight_layout()
+        plt.show()
+
+    def visualize_skewness(self, dataframe, columns):
+        """
+        Plots histograms for selected columns to visualize their skewness.
+
+        Args:
+            dataframe (pd.DataFrame): The DataFrame containing the data to visualize.
+            columns (list): List of column names to plot.
+        """
+        for col in columns:
+            plt.figure(figsize=(8, 4))
+            sns.histplot(dataframe[col], kde=True, bins=30)
+            plt.title(f"Distribution of {col} (Skew: {dataframe[col].skew():.2f})")
+            plt.xlabel(col)
+            plt.ylabel("Frequency")
+            plt.show()
+
+    def visualize_outliers(self):
+        """
+        Visualizes potential outliers using boxplots for numeric columns in the DataFrame.
+        """
+        numeric_cols = self.transformed_column_data.select_dtypes(include=[np.number]).columns.tolist()
+
+        if not numeric_cols:
+            print("No numeric columns found for outlier visualization.")
+            return
+
+        for col in numeric_cols:
+            plt.figure(figsize=(8, 4))
+            sns.boxplot(x=self.transformed_column_data[col])
+            plt.title(f"Boxplot of {col}")
+            plt.xlabel(col)
+            plt.show()
+
+    def visualize_correlation_matrix(self):
+        """
+        Computes and visualizes the correlation matrix for numeric columns in the dataset.
+
+        Returns:
+            pd.DataFrame: The correlation matrix as a DataFrame.
+        """
+        numeric_data = self.transformed_column_data.select_dtypes(include=[np.number])
+
+        if numeric_data.empty:
+            print("No numeric columns found to compute the correlation matrix.")
+            return None
+
+        correlation_matrix = numeric_data.corr()
+
+        # Visualize the correlation matrix as a heatmap
+        plt.figure(figsize=(12, 10))
+        sns.heatmap(correlation_matrix, annot=True, fmt=".2f", cmap="coolwarm", square=True)
+        plt.title("Correlation Matrix")
+        plt.show()
+
+        return correlation_matrix
 
 
 if __name__ == "__main__":
