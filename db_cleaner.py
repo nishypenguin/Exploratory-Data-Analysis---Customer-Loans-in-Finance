@@ -36,10 +36,6 @@ class DataTransform:
 
         return self.transformed_dataframe
     
-    
-
-        
-
         
 if __name__ == "__main__":
     cleaner = DataTransform()

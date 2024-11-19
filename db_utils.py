@@ -3,12 +3,17 @@ from sqlalchemy import create_engine
 import urllib.parse
 import pandas as pd
 
+
 class RDSDatabaseConnector:
-    """A class for connecting to an AWS RDS database, extracting data, and saving/loading it as a CSV file."""
+    """
+    A class for connecting to an AWS RDS database, extracting data,
+    and saving/loading it as a CSV file.
+    """
 
     def __init__(self, creds_file='credentials.yaml'):
         """
-        Initializes the connector by reading database credentials from the YAML file and setting up the engine.
+        Initializes the connector by reading database credentials
+        from the YAML file and setting up the engine.
 
         Args:
             creds_file (str): Path to the YAML file containing database credentials.
@@ -22,22 +27,26 @@ class RDSDatabaseConnector:
         Reads the database credentials from the YAML file.
 
         Returns:
-            A dictionary containing the database credentials if successful, None otherwise.
+            dict: A dictionary containing the database credentials.
         """
         try:
             with open(self._creds_file, 'r') as file:
                 credentials = yaml.safe_load(file)
-                return credentials
+            return credentials
+        except FileNotFoundError:
+            print(f"Error: Credentials file '{self._creds_file}' not found.")
+        except yaml.YAMLError as e:
+            print(f"Error parsing YAML file: {e}")
         except Exception as e:
-            print(f"Error reading credentials file: {e}")
-            return None
+            print(f"Unexpected error reading credentials file: {e}")
+        return None
 
     def _initialize_db_engine(self):
         """
         Initializes and returns a SQLAlchemy engine using the stored database credentials.
 
         Returns:
-            SQLAlchemy engine object for database connection.
+            sqlalchemy.engine.Engine: SQLAlchemy engine object for database connection.
         """
         try:
             database_type = 'postgresql'
@@ -48,28 +57,28 @@ class RDSDatabaseConnector:
             database = self._creds['RDS_DATABASE']
             port = self._creds['RDS_PORT']
 
-            engine = create_engine(
+            return create_engine(
                 f"{database_type}+{db_api}://{user}:{password}@{host}:{port}/{database}"
             )
-            return engine
-        except KeyError:
-            print("Database credentials are missing.")
-            return None
+        except KeyError as e:
+            print(f"Error: Missing database credential key: {e}")
+        except Exception as e:
+            print(f"Unexpected error initializing database engine: {e}")
+        return None
 
     def fetch_loan_payments_data(self):
         """
-        Fetches data from the loan_payments table in the RDS database and loads it into a DataFrame.
+        Fetches data from the 'loan_payments' table in the RDS database.
 
         Returns:
-            A DataFrame containing the loan payments data if successful, None otherwise.
+            pd.DataFrame: DataFrame containing the loan payments data.
         """
         query = "SELECT * FROM loan_payments"
         try:
-            df = pd.read_sql(query, self._engine)
-            return df
+            return pd.read_sql(query, self._engine)
         except Exception as e:
             print(f"Error fetching data from database: {e}")
-            return None
+        return None
 
     def save_dataframe_to_csv(self, dataframe, file_path='loan_payments_data.csv'):
         """
@@ -77,11 +86,11 @@ class RDSDatabaseConnector:
 
         Args:
             dataframe (pd.DataFrame): The DataFrame to save.
-            file_path (str): The path to the CSV file where data will be saved.
+            file_path (str): The path to the CSV file.
         """
         try:
             dataframe.to_csv(file_path, index=False)
-            print(f"Data saved to {file_path}")
+            print(f"Data successfully saved to {file_path}")
         except Exception as e:
             print(f"Error saving data to CSV: {e}")
 
@@ -90,27 +99,32 @@ class RDSDatabaseConnector:
         Loads data from a CSV file into a DataFrame.
 
         Args:
-            file_path (str): The path to the CSV file containing the data.
+            file_path (str): The path to the CSV file.
 
         Returns:
-            A DataFrame containing the loaded data if successful, None otherwise.
+            pd.DataFrame: DataFrame containing the loaded data.
         """
         try:
             dataframe = pd.read_csv(file_path)
-            print(f"Data shape: {dataframe.shape}")
-            print("Data sample:")
+            print(f"Data successfully loaded. Shape: {dataframe.shape}")
+            print("Sample data:")
             print(dataframe.head())
             return dataframe
+        except FileNotFoundError:
+            print(f"Error: File '{file_path}' not found.")
+        except pd.errors.ParserError as e:
+            print(f"Error parsing CSV file: {e}")
         except Exception as e:
-            print(f"Error loading data from CSV: {e}")
-            return None
+            print(f"Unexpected error loading data from CSV: {e}")
+        return None
+
 
 # Main script execution
 if __name__ == "__main__":
     connector = RDSDatabaseConnector()
 
-    
-    my_data = connector.load_data_from_csv()
-    print("Data successfully loaded from CSV:")
-    print(f"Loaded Data Typed: {my_data.dtypes}")
-
+    # Load data from CSV
+    data = connector.load_data_from_csv()
+    if data is not None:
+        print("Data successfully loaded from CSV:")
+        print(f"Loaded Data Types:\n{data.dtypes}")
