@@ -87,14 +87,15 @@ This project focuses on analyzing loan payment data extracted from an AWS RDS da
 ## Results and Insights
 
 - **Loan Recovery**:
-  - X% of loans have been successfully recovered.
-  - An additional £X is projected to be recovered in the next 6 months.
+  - 79.2% of loans have been successfully recovered.
+  - An additional £130158940 is projected to be recovered in the next 6 months.
 - **Loan Loss**:
-  - X% of loans were marked as "Charged Off," resulting in £Y losses.
-  - Late payments could lead to £Z additional losses.
+  - 10.3% of loans were marked as "Charged Off,".
+  - 1.26% of loans currently marked as late.
 - **Default Indicators**:
-  - Loan grade and purpose were significant predictors of default risk.
-  - Customers with lower credit scores or higher debt-to-income ratios were more likely to default.
+  - Loan grade was a predictor of default risk (Grade C,B,D being the highest).
+  - Customers borrowing for debt consolidation contributed most to defaults.
+  - Customers who rented defaulted more.
 
 ---
 
